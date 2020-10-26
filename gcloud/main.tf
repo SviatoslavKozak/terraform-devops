@@ -14,6 +14,18 @@ resource "google_compute_instance" "vm_instance" {
       image = "ubuntu-2004-focal-v20201014"
     }
   }
+  
+  provisioner "remote-exec" {
+    inline = [
+      "sudo wget -qO- icanhazip.com > ~/IP-address.txt"
+    ]
+    connection {
+      type = "ssh"
+      user = "svyat"
+      private_key = file("C:/Users/svyat/.ssh/id_rsa")
+      host = self.network_interface.0.access_config.0.nat_ip
+    }
+  }
 
   network_interface {
     network = google_compute_network.vpc_network.self_link
@@ -31,6 +43,10 @@ resource "google_compute_firewall" "open-tcp" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "9090"]
+    ports    = ["80", "9090", "22"]
   }
 }
+output "ip" {
+  value = google_compute_instance.vm_instance.*.network_interface.0.access_config.0.nat_ip
+}
+
