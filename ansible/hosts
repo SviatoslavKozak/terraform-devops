@@ -1,8 +1,0 @@
-[LAMP]
-
-ubuntu2004 ansible_host=35.198.133.224 
-ubuntu2004 ansible_host=34.89.216.153
-
-[all:vars]
-ansible_user=svyat
-ansible_ssh_private_key=~/.ssh/id_rsa
