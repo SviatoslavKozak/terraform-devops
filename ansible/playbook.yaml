@@ -3,18 +3,103 @@
  - name: install and start LAMP
    hosts: LAMP
    become: yes
+   vars_files:
+    - vars/default.yaml
   
    tasks:
-   - name: install prerequisites
-     apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
+    - name: install prerequisites
+      apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
 
-   - name: install Apache
-     apt: name=apache2 update_cache=yes state=latest
+    - name: install Apache
+      apt: name=apache2 update_cache=yes state=latest
 
-   - name: install MySql
-     apt: name={{ item }} update_cache=yes state=latest
-     loop: [ 'mysql-server', 'python3-pymysql' ]
+    - name: install MySql
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: [ 'mysql-server', 'python3-pymysql' ]
    
-   - name: install php
-     apt: name={{ item }} update_cache=yes state=latest
-     loop: [ 'php', 'php-mysql', 'libapache2-mod-php' ]
+    - name: install php
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: [ 'php', 'php-mysql', 'libapache2-mod-php' ]
+
+    - name: install php extensions
+      apt: name={{ item }} update_cache=yes state=latest
+      loop: "{{ php_modules }}"
+   
+    - name: create site folder
+      file:
+        path: /var/www/{{ http_host }}
+        state: directory
+
+    - name: set up virtualhost
+      template:
+        src: "files/apache.conf"
+        dest: "/etc/apache2/sites-available/{{ http_conf }}"
+
+    - name: rewrite
+      command: a2enmod rewrite
+    
+    - name: enabled site
+      command: a2ensite apache.conf
+  
+    - name: disabled default config
+      shell: a2dissite 000-default.conf
+
+    - name: create database
+      mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: [ test ]
+ 
+    - name: Create MySQL user
+      mysql_user:
+        name: "{{ mysql_user }}"
+        password: "{{ mysql_password }}"
+        priv: "{{ mysql_db }}.*:ALL"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.soct
+      tags: [ test ]
+
+    - name: unzip site
+      unarchive:
+        src: https://github.com/mplesha/NoviNano/releases/download/v1.0/20180706_novinano_mr_9d7561b2584268389437180706072703_archive.zip
+        dest: /var/www/{{ http_host }}
+        remote_src: yes
+ 
+    - name: set rights for site folder
+      file:
+        path: /var/www/{{ http_host }}
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
+
+    - name: Set permissions for directories
+      shell: "/usr/bin/find /var/www/{{ http_host }} -type d -exec chmod 750 {} \\;"
+
+    - name: Set permissions for files
+      shell: "/usr/bin/find /var/www/{{ http_host }} -type f -exec chmod 640 {} \\;"
+
+    - name: Set up wp-config
+      template:
+        src: "files/wp-config.php"
+        dest: "/var/www/{{ http_host }}/wp-config.php"
+   
+    - name: reload apache2
+      service: name=apache2 state=reloaded
+      tags: [ test ]
+
+    - name: restart apache2
+      service: name=apache2 state=restarted
+      tags: [ test ]
+
+   handlers:
+    - name: reload apache2
+      service: name=apache2 state=reloaded
+ 
+    - name: restart apache2
+      service: name=apache2 state=restarted

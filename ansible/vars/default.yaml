@@ -1,0 +1,11 @@
+---
+php_modules: [ 'php-curl', 'php-gd', 'php-mbstring', 'php-xml', 'php-xmlrpc', 'php-soap', 'php-intl', 'php-zip' ]
+
+mysql_root_password: "svyatoslav"
+mysql_user: "svyatoslav"
+mysql_db: "site"
+mysql_password: "password"
+
+http_host: "site"
+http_conf: "apache.conf"
+http_port: "80"
