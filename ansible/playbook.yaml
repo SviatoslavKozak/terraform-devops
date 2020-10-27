@@ -51,7 +51,7 @@
         login_user: root
         login_password: "{{ mysql_root_password }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
-      tags: [ test ]
+      tags: [ test1 ]
  
     - name: Create MySQL user
       mysql_user:
@@ -62,13 +62,23 @@
         login_user: root
         login_password: "{{ mysql_root_password }}"
         login_unix_socket: /var/run/mysqld/mysqld.soct
+      tags: [ test2 ]
+
+    - name: install site
+      uri:
+        url: https://github.com/mplesha/NoviNano/releases/download/v1.0/20180706_novinano_mr_9d7561b2584268389437180706072703_archive.zip
+        dest: /var/www/{{ http_host }}/
       tags: [ test ]
 
-    - name: unzip site
-      unarchive:
-        src: https://github.com/mplesha/NoviNano/releases/download/v1.0/20180706_novinano_mr_9d7561b2584268389437180706072703_archive.zip
-        dest: /var/www/{{ http_host }}
-        remote_src: yes
+    - name: add installer
+      url:
+        url: https://github.com/mplesha/NoviNano/releases/download/v1.0/20180706_novinano_mr_301b6110dc5ef0dd6130180706071745_installer.php
+        dest: /var/www/{{ http_host }}/
+      tags: [ test ]
+
+    - name: run installer
+      shell: php /var/www/{{ http_host }}/20180706_novinano_mr_301b6110dc5ef0dd6130180706071745_installer.php
+      tags: [ test ]
  
     - name: set rights for site folder
       file:
@@ -80,7 +90,7 @@
 
     - name: Set permissions for directories
       shell: "/usr/bin/find /var/www/{{ http_host }} -type d -exec chmod 750 {} \\;"
-
+ 
     - name: Set permissions for files
       shell: "/usr/bin/find /var/www/{{ http_host }} -type f -exec chmod 640 {} \\;"
 
